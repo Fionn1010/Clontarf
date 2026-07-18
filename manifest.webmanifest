@@ -1,0 +1,10 @@
+{
+  "name": "Battle of Clontarf AR Tour",
+  "short_name": "Clontarf Tour",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#07141c",
+  "theme_color": "#07141c",
+  "description": "A four-stop narrated heritage tour of the Battle of Clontarf.",
+  "icons": []
+}

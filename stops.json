@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "slug": "armies-assemble",
+    "title": "The Armies Assemble",
+    "subtitle": "The shoreline before battle",
+    "image": "assets/images/scene-1.jpg",
+    "short": "Longships approach the Dublin shoreline as warriors gather and two armies prepare for battle.",
+    "body": [
+      "It is dawn on 23 April 1014. Across the strand, rival forces gather beneath their standards.",
+      "Brian Boru\u2019s coalition has marched east to challenge the power of Dublin and Leinster. Norse and Irish warriors arrive from the sea and from the surrounding kingdoms.",
+      "This opening scene establishes the scale of the conflict before the first shield walls meet."
+    ],
+    "narration": "A thousand years ago, this peaceful shoreline was crowded with warriors. Longships approached the strand, banners rose in the wind, and two great armies prepared to decide the fate of Dublin."
+  },
+  {
+    "id": 2,
+    "slug": "brian-boru-council",
+    "title": "Brian Boru and His Council",
+    "subtitle": "The final plans are made",
+    "image": "assets/images/scene-2.jpg",
+    "short": "Stand beside Brian Boru and his commanders as they survey the field and prepare their forces.",
+    "body": [
+      "Brian Boru was now an elderly king, but his authority held together a powerful alliance.",
+      "Around him stood commanders from Munster and allied kingdoms. Their task was to break the coalition of Dublin, Leinster and their overseas supporters.",
+      "The scene places the visitor within the war council, moments before the battle begins."
+    ],
+    "narration": "Brian Boru looks across the field as his commanders make their final preparations. The king will not lead the charge himself, but every decision made here will shape the battle to come."
+  },
+  {
+    "id": 3,
+    "slug": "clash-of-armies",
+    "title": "The Clash of Armies",
+    "subtitle": "Shield wall meets shield wall",
+    "image": "assets/images/scene-3.jpg",
+    "short": "The lines collide in a fierce close-quarters battle of shields, spears, axes and swords.",
+    "body": [
+      "The fighting lasted for hours. Warriors fought at close range in dense formations, relying on shields, spears, axes and swords.",
+      "The battle was not a simple contest between Irish and Viking forces. Irish kingdoms and Norse-Gaelic groups fought on both sides.",
+      "Sound, movement and limited groups of detailed characters can create the impression of a much larger battle without overwhelming a mobile phone."
+    ],
+    "narration": "The shield walls collide. Spears strike timber, axes rise above the crowd, and the sound of battle rolls across the strand. Victory is still uncertain, and neither side can easily give ground."
+  },
+  {
+    "id": 4,
+    "slug": "aftermath-and-legacy",
+    "title": "Aftermath and Legacy",
+    "subtitle": "The battlefield falls silent",
+    "image": "assets/images/scene-4.jpg",
+    "short": "The coalition of Brian Boru wins the field, but the king does not survive the day.",
+    "body": [
+      "Brian\u2019s forces won the battle, but the victory came at an enormous cost.",
+      "Brian Boru was killed before the day ended. His death became central to the later memory of Clontarf and helped transform him from king into legend.",
+      "The final scene returns the visitor to the modern shoreline and reflects on how history, memory and myth became intertwined."
+    ],
+    "narration": "The battle is won, but Brian Boru does not live to see the peace that follows. The armies fade, the shoreline becomes quiet again, and the king\u2019s name passes into legend."
+  }
+]
