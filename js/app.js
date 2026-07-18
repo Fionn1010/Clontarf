@@ -1,4 +1,3 @@
-
 const state = {
   stops: [],
   stopIndex: Number(localStorage.getItem("clontarf-stop-index") || 0),
