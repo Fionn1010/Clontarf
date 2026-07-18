@@ -1,10 +1,24 @@
 {
-  "name": "Battle of Clontarf AR Tour",
+  "name": "Battle of Clontarf | Fionn Heritage Tours",
   "short_name": "Clontarf Tour",
-  "start_url": "./index.html",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#07141c",
-  "theme_color": "#07141c",
-  "description": "A four-stop narrated heritage tour of the Battle of Clontarf.",
-  "icons": []
+  "background_color": "#07140f",
+  "theme_color": "#10251d",
+  "description": "A cinematic and augmented-reality heritage experience.",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

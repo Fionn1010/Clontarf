@@ -1,60 +1,110 @@
-
-const CACHE_NAME = "clontarf-tour-v1";
-const CORE_ASSETS = [
+const CACHE_NAME = "fionn-clontarf-v1";
+const APP_SHELL = [
   "./",
   "./index.html",
-  "./tour.html",
-  "./stop.html",
-  "./ar.html",
-  "./styles.css",
-  "./app.js",
-  "./stop.js",
-  "./ar.js",
-  "./stops.json",
-  "./manifest.webmanifest",
-  "./assets/images/hero.jpg",
-  "./assets/images/scene-1.jpg",
-  "./assets/images/scene-2.jpg",
-  "./assets/images/scene-3.jpg",
-  "./assets/images/scene-4.jpg"
+  "./css/styles.css",
+  "./js/app.js",
+  "./config/stops.json",
+  "./manifest.webmanifest"
 ];
 
-self.addEventListener("install", event => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(CORE_ASSETS))
+      .then((cache) => cache.addAll(APP_SHELL))
       .then(() => self.skipWaiting())
   );
 });
 
-self.addEventListener("activate", event => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+      ))
       .then(() => self.clients.claim())
   );
 });
 
-self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+self.addEventListener("fetch", (event) => {
+  const request = event.request;
+  if (request.method !== "GET") return;
 
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      const networkFetch = fetch(event.request)
-        .then(response => {
-          if (response && response.status === 200 && response.type !== "error") {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-          }
+  const url = new URL(request.url);
+
+  // Range requests are required for reliable MP4 playback on mobile.
+  if (request.headers.has("range")) {
+    event.respondWith(handleRangeRequest(request));
+    return;
+  }
+
+  // Navigation: network first, then cached index.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy));
           return response;
         })
-        .catch(() => cached);
+        .catch(() => caches.match("./index.html"))
+    );
+    return;
+  }
 
-      // Pages: network first, then cache. Images/assets: cache first.
-      if (event.request.mode === "navigate") {
-        return networkFetch || cached || caches.match("./index.html");
-      }
-      return cached || networkFetch;
-    })
-  );
+  // Same-origin assets: cache first, update in background.
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        const network = fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          })
+          .catch(() => cached);
+
+        return cached || network;
+      })
+    );
+  }
 });
+
+async function handleRangeRequest(request) {
+  const rangeHeader = request.headers.get("range");
+  const cached = await caches.match(request.url);
+  let response = cached;
+
+  if (!response) {
+    response = await fetch(request.url);
+    if (response.ok && response.status === 200) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request.url, response.clone());
+    }
+  }
+
+  if (!response || !response.ok) return response;
+
+  const data = await response.arrayBuffer();
+  const size = data.byteLength;
+  const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
+
+  if (!match) return response;
+
+  const start = Number(match[1]);
+  const end = match[2] ? Number(match[2]) : size - 1;
+  const chunk = data.slice(start, end + 1);
+
+  return new Response(chunk, {
+    status: 206,
+    statusText: "Partial Content",
+    headers: {
+      "Content-Range": `bytes ${start}-${end}/${size}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": String(chunk.byteLength),
+      "Content-Type": response.headers.get("Content-Type") || "video/mp4"
+    }
+  });
+}

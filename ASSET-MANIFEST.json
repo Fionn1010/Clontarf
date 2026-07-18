@@ -1,0 +1,23 @@
+{
+  "included_in_zip": false,
+  "note": "Large media binaries are not embedded. Add them to the paths below.",
+  "required_or_referenced_assets": [
+    "assets/videos/scene-1-video-1-first-sighting.mp4",
+    "assets/videos/scene-1-video-2-armies-assemble.mp4",
+    "assets/audio/scene-1-narration.mp3",
+    "assets/models/scene-1-ar-1-stand-with-the-irish.glb",
+    "assets/models/scene-1-ar-2-viking-fleet.glb",
+    "assets/videos/scene-2-video-1-brian-council.mp4",
+    "assets/videos/scene-2-video-2-final-orders.mp4",
+    "assets/audio/scene-2-narration.mp3",
+    "assets/models/scene-2-ar-1-war-council.glb",
+    "assets/videos/scene-3-video-1-battle-lines.mp4",
+    "assets/videos/scene-3-video-2-clash.mp4",
+    "assets/audio/scene-3-narration.mp3",
+    "assets/models/scene-3-ar-1-battle-lines.glb",
+    "assets/videos/scene-4-video-1-aftermath.mp4",
+    "assets/videos/scene-4-video-2-legacy.mp4",
+    "assets/audio/scene-4-narration.mp3",
+    "assets/models/scene-4-ar-1-legacy.glb"
+  ]
+}

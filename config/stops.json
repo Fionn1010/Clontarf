@@ -1,0 +1,106 @@
+[
+  {
+    "id": 1,
+    "title": "The Armies Assemble",
+    "subtitle": "Stand where the opposing forces gathered before battle.",
+    "coordinates": {
+      "latitude": 53.3605,
+      "longitude": -6.1736
+    },
+    "videos": [
+      "assets/videos/scene-1-video-1-first-sighting.mp4",
+      "assets/videos/scene-1-video-2-armies-assemble.mp4"
+    ],
+    "audio": "assets/audio/scene-1-narration.mp3",
+    "sequence": [
+      {
+        "type": "ar",
+        "title": "Stand with the Irish",
+        "instruction": "Place Brian Boru and the Irish camp on the grass, then step beside the group.",
+        "model": "assets/models/scene-1-ar-1-stand-with-the-irish.glb",
+        "iosModel": ""
+      },
+      {
+        "type": "instruction",
+        "title": "Walk to the seawall",
+        "text": "Point your phone toward Dublin Bay when you reach the viewing position."
+      },
+      {
+        "type": "ar",
+        "title": "The Viking Fleet Arrives",
+        "instruction": "Place the fleet offshore and move your phone slowly to frame the longships across the bay.",
+        "model": "assets/models/scene-1-ar-2-viking-fleet.glb",
+        "iosModel": ""
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Brian Boru and His Council",
+    "subtitle": "Enter the final council before the battle.",
+    "coordinates": {
+      "latitude": 53.3611,
+      "longitude": -6.1718
+    },
+    "videos": [
+      "assets/videos/scene-2-video-1-brian-council.mp4",
+      "assets/videos/scene-2-video-2-final-orders.mp4"
+    ],
+    "audio": "assets/audio/scene-2-narration.mp3",
+    "sequence": [
+      {
+        "type": "ar",
+        "title": "The War Council",
+        "instruction": "Place Brian and his commanders into the landscape.",
+        "model": "assets/models/scene-2-ar-1-war-council.glb",
+        "iosModel": ""
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "The Clash of Armies",
+    "subtitle": "Witness the battle lines collide.",
+    "coordinates": {
+      "latitude": 53.362,
+      "longitude": -6.1698
+    },
+    "videos": [
+      "assets/videos/scene-3-video-1-battle-lines.mp4",
+      "assets/videos/scene-3-video-2-clash.mp4"
+    ],
+    "audio": "assets/audio/scene-3-narration.mp3",
+    "sequence": [
+      {
+        "type": "ar",
+        "title": "The Battle Lines",
+        "instruction": "Place the opposing formations on open ground.",
+        "model": "assets/models/scene-3-ar-1-battle-lines.glb",
+        "iosModel": ""
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Aftermath and Legacy",
+    "subtitle": "Discover how the battle reshaped Ireland.",
+    "coordinates": {
+      "latitude": 53.363,
+      "longitude": -6.1682
+    },
+    "videos": [
+      "assets/videos/scene-4-video-1-aftermath.mp4",
+      "assets/videos/scene-4-video-2-legacy.mp4"
+    ],
+    "audio": "assets/audio/scene-4-narration.mp3",
+    "sequence": [
+      {
+        "type": "ar",
+        "title": "Legacy of Clontarf",
+        "instruction": "Place the final commemorative scene into the landscape.",
+        "model": "assets/models/scene-4-ar-1-legacy.glb",
+        "iosModel": ""
+      }
+    ]
+  }
+]
