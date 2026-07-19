@@ -17,7 +17,7 @@
         "type": "ar",
         "title": "Stand with the Irish",
         "instruction": "Place Brian Boru and the Irish camp on the grass, then step beside the group.",
-        "model": "assets/models/scene-1-ar-1-stand-with-the-irish.glb",
+        "model": "assets/models/sc1ar1.glb",
         "iosModel": ""
       },
       {
@@ -29,7 +29,7 @@
         "type": "ar",
         "title": "The Viking Fleet Arrives",
         "instruction": "Place the fleet offshore and move your phone slowly to frame the longships across the bay.",
-        "model": "assets/models/scene-1-ar-2-viking-fleet.glb",
+        "model": "assets/models/sc1ar2.glb",
         "iosModel": ""
       }
     ]
