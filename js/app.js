@@ -546,3 +546,216 @@ function escapeHtml(value) {
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
+
+/* Fionn Heritage expanded developer suite */
+function initialiseDeveloperTools() {
+  if (!els.devPanel) return;
+
+  Object.assign(state, {
+    gpsBypassed: false,
+    simulatedHeading: Number(localStorage.getItem('clontarf-dev-heading') || 0),
+    assetResults: new Map(),
+    loadedModels: new Set(),
+    modelLoadMs: null,
+    modelLoadStartedAt: 0,
+    devLogEntries: [],
+    devOriginalStops: JSON.parse(JSON.stringify(state.stops)),
+    devFps: 0,
+    devFrames: 0,
+    devFpsStart: performance.now()
+  });
+
+  injectExpandedDevStyles();
+  els.devPanel.hidden = false;
+  els.devPanel.classList.add('fionn-dev-suite');
+  els.devPanel.innerHTML = `
+    <div class="dev-head"><div><p class="eyebrow">Developer mode</p><h2>Fionn test console</h2></div><button id="devCollapse" class="dev-btn">Collapse</button></div>
+    <div id="devBody">
+      <div class="dev-tabs">
+        <button class="dev-tab active" data-tab="journey">Journey</button>
+        <button class="dev-tab" data-tab="assets">Assets</button>
+        <button class="dev-tab" data-tab="simulation">Simulation</button>
+        <button class="dev-tab" data-tab="editor">Editor</button>
+        <button class="dev-tab" data-tab="console">Console</button>
+      </div>
+
+      <section class="dev-panel active" data-panel="journey">
+        <label class="dev-label" for="devStopSelect">Jump to stop</label>
+        <select id="devStopSelect" class="dev-input">${state.stops.map((s,i)=>`<option value="${i}">Stop ${s.id}: ${escapeHtml(s.title)}</option>`).join('')}</select>
+        <div id="devArButtons" class="dev-grid"></div>
+        <div class="dev-grid">
+          <button id="devSkipFilms" class="dev-primary">Skip films → first AR</button>
+          <button id="devReloadModel" class="dev-btn">Reload current GLB</button>
+          <button id="devPreviousNew" class="dev-btn">Previous stop</button>
+          <button id="devNextNew" class="dev-btn">Next stop</button>
+          <button id="devCompletion" class="dev-btn">Stop complete</button>
+          <button id="devResetNew" class="dev-danger">Reset tour</button>
+        </div>
+        <div id="devPerformance" class="dev-metrics"></div>
+      </section>
+
+      <section class="dev-panel" data-panel="assets">
+        <div class="dev-grid"><button id="devScanAssets" class="dev-primary">Scan current stop</button><button id="devScanAllAssets" class="dev-btn">Scan all stops</button></div>
+        <div id="devAssetInspector"></div>
+      </section>
+
+      <section class="dev-panel" data-panel="simulation">
+        <div class="dev-grid"><button id="devTeleport" class="dev-primary">Teleport to current stop</button><button id="devRealGps" class="dev-btn">Use real GPS</button></div>
+        <label class="dev-label">Simulated heading: <strong id="devHeadingValue">${state.simulatedHeading}°</strong></label>
+        <input id="devHeading" class="dev-range" type="range" min="0" max="359" value="${state.simulatedHeading}">
+        <div class="dev-compass"><span>N</span><div id="devCompassNeedle" class="dev-needle"></div></div>
+        <p class="dev-note">The heading simulator exercises directional tour logic. It cannot rotate the physical camera or a native AR session.</p>
+      </section>
+
+      <section class="dev-panel" data-panel="editor">
+        <p class="dev-note">Edits remain in this browser until you download a replacement <code>stops.json</code>.</p>
+        <label class="dev-label">Title</label><input id="editTitle" class="dev-input">
+        <label class="dev-label">Subtitle</label><textarea id="editSubtitle" class="dev-input" rows="2"></textarea>
+        <div class="dev-two">
+          <div><label class="dev-label">Latitude</label><input id="editLatitude" class="dev-input" type="number" step="0.000001"></div>
+          <div><label class="dev-label">Longitude</label><input id="editLongitude" class="dev-input" type="number" step="0.000001"></div>
+          <div><label class="dev-label">Activation radius (m)</label><input id="editRadius" class="dev-input" type="number" min="5" max="250"></div>
+          <div><label class="dev-label">Preferred heading (°)</label><input id="editPreferredHeading" class="dev-input" type="number" min="0" max="359"></div>
+        </div>
+        <div class="dev-grid"><button id="devApplyEdit" class="dev-primary">Apply changes</button><button id="devRestoreStop" class="dev-btn">Restore stop</button><button id="devExportJson" class="dev-btn">Download stops.json</button><button id="devCopyJson" class="dev-btn">Copy JSON</button></div>
+      </section>
+
+      <section class="dev-panel" data-panel="console">
+        <div class="dev-grid"><button id="devCopyLog" class="dev-btn">Copy log</button><button id="devClearLog" class="dev-danger">Clear log</button></div>
+        <pre id="devConsole" class="dev-console"></pre>
+      </section>
+    </div>`;
+
+  bindExpandedDevControls();
+  bindModelDiagnostics();
+  populateDevEditor();
+  devLog('Expanded developer suite opened');
+  updateDeveloperTools();
+  scanCurrentAssets();
+  requestAnimationFrame(devFpsFrame);
+}
+
+function bindExpandedDevControls() {
+  document.querySelectorAll('.dev-tab').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.dev-tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.dev-panel').forEach(x => x.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector(`[data-panel="${btn.dataset.tab}"]`)?.classList.add('active');
+  }));
+
+  $('devCollapse')?.addEventListener('click', () => {
+    const body = $('devBody'); body.hidden = !body.hidden; $('devCollapse').textContent = body.hidden ? 'Expand' : 'Collapse';
+  });
+  $('devStopSelect')?.addEventListener('change', e => { state.stopIndex = Number(e.target.value); renderStop(); populateDevEditor(); scanCurrentAssets(); });
+  $('devSkipFilms')?.addEventListener('click', jumpToFirstAr);
+  $('devReloadModel')?.addEventListener('click', reloadCurrentModel);
+  $('devPreviousNew')?.addEventListener('click', () => { previousStop(); populateDevEditor(); scanCurrentAssets(); });
+  $('devNextNew')?.addEventListener('click', () => { nextStop(); populateDevEditor(); scanCurrentAssets(); });
+  $('devCompletion')?.addEventListener('click', () => { state.sequenceIndex = currentStop()?.sequence?.length || 0; renderSequenceItem(); });
+  $('devResetNew')?.addEventListener('click', resetTour);
+  $('devScanAssets')?.addEventListener('click', () => scanCurrentAssets(true));
+  $('devScanAllAssets')?.addEventListener('click', scanAllAssets);
+  $('devTeleport')?.addEventListener('click', enableDevTeleport);
+  $('devRealGps')?.addEventListener('click', disableDevTeleport);
+  $('devHeading')?.addEventListener('input', e => {
+    state.simulatedHeading = Number(e.target.value);
+    localStorage.setItem('clontarf-dev-heading', String(state.simulatedHeading));
+    $('devHeadingValue').textContent = `${state.simulatedHeading}°`;
+    $('devCompassNeedle').style.transform = `translateX(-50%) rotate(${state.simulatedHeading}deg)`;
+    if (state.gpsBypassed) showDevArrival();
+  });
+  $('devApplyEdit')?.addEventListener('click', applyDevEditor);
+  $('devRestoreStop')?.addEventListener('click', restoreDevStop);
+  $('devExportJson')?.addEventListener('click', exportDevJson);
+  $('devCopyJson')?.addEventListener('click', copyDevJson);
+  $('devCopyLog')?.addEventListener('click', copyDevLog);
+  $('devClearLog')?.addEventListener('click', () => { state.devLogEntries = []; updateDevConsole(); });
+}
+
+function bindModelDiagnostics() {
+  els.arViewer?.addEventListener('load', () => {
+    state.modelLoadMs = Math.round(performance.now() - state.modelLoadStartedAt);
+    state.loadedModels.add(els.arViewer.src);
+    devLog(`Model loaded in ${state.modelLoadMs} ms`);
+    updateDeveloperTools();
+  });
+  els.arViewer?.addEventListener('error', () => devLog(`Model load failed: ${els.arViewer?.src || 'unknown'}`, 'error'));
+}
+
+function updateDeveloperTools() {
+  if (!state.devMode || !els.devPanel || els.devPanel.hidden) return;
+  if ($('devStopSelect')) $('devStopSelect').value = String(state.stopIndex);
+  const stop = currentStop();
+  const arButtons = $('devArButtons');
+  if (arButtons && stop) {
+    const items = (stop.sequence || []).map((item,index)=>({item,index})).filter(x=>x.item.type==='ar');
+    arButtons.innerHTML = items.length ? items.map((x,i)=>`<button class="dev-primary dev-ar-jump" data-i="${x.index}">Test AR ${i+1}: ${escapeHtml(x.item.title)}</button>`).join('') : '<p class="dev-note">No AR scenes configured.</p>';
+    arButtons.querySelectorAll('.dev-ar-jump').forEach(btn => btn.addEventListener('click', () => { state.sequenceIndex = Number(btn.dataset.i); renderSequenceItem(); document.querySelector('#arStage')?.scrollIntoView({behavior:'smooth'}); }));
+  }
+  const item = stop?.sequence?.[state.sequenceIndex];
+  const memory = performance.memory ? `${Math.round(performance.memory.usedJSHeapSize / 1048576)} MB` : 'Unavailable';
+  if ($('devPerformance')) $('devPerformance').innerHTML = `
+    <div><strong>FPS</strong><span>${state.devFps || '—'}</span></div><div><strong>Model load</strong><span>${state.modelLoadMs == null ? '—' : state.modelLoadMs+' ms'}</span></div><div><strong>Models loaded</strong><span>${state.loadedModels?.size || 0}</span></div><div><strong>Network</strong><span>${navigator.connection?.effectiveType || 'unknown'}</span></div><div><strong>JS memory</strong><span>${memory}</span></div><div><strong>GPS</strong><span>${state.gpsBypassed ? 'Teleport' : 'Real'}</span></div><p class="dev-wide"><strong>Current:</strong> ${escapeHtml(item?.type==='ar' ? item.model : 'No AR model open')}</p><p class="dev-note dev-wide">Browsers do not reliably expose GPU or texture memory, so this panel reports only real browser metrics.</p>`;
+  if ($('devCompassNeedle')) $('devCompassNeedle').style.transform = `translateX(-50%) rotate(${state.simulatedHeading}deg)`;
+  updateAssetInspector(); updateDevConsole();
+}
+
+function jumpToFirstAr() {
+  const index = currentStop()?.sequence?.findIndex(x => x.type === 'ar');
+  if (index == null || index < 0) return showToast('No AR scene is configured for this stop.');
+  if (els.videoModal && !els.videoModal.hidden) closeVideo(false);
+  state.sequenceIndex = index; renderSequenceItem();
+}
+
+function reloadCurrentModel() {
+  const item = currentStop()?.sequence?.[state.sequenceIndex];
+  if (!item || item.type !== 'ar') return showToast('Open an AR scene first.');
+  state.modelLoadStartedAt = performance.now(); state.modelLoadMs = null;
+  const joiner = item.model.includes('?') ? '&' : '?';
+  els.arViewer.src = `${item.model}${joiner}reload=${Date.now()}`;
+  devLog(`Force reloading model: ${item.model}`); showToast('Reloading current GLB without cache.');
+}
+
+function collectAssets(stop) {
+  const out = [];
+  (stop?.videos || []).forEach(path => out.push({type:'Video',path}));
+  if (stop?.audio) out.push({type:'Audio',path:stop.audio});
+  (stop?.sequence || []).forEach(x => { if (x.type==='ar' && x.model) out.push({type:'GLB',path:x.model}); if (x.type==='ar' && x.iosModel) out.push({type:'USDZ',path:x.iosModel}); });
+  return out;
+}
+async function inspectAsset(asset, force=false) {
+  if (!force && state.assetResults.has(asset.path)) return;
+  state.assetResults.set(asset.path,{...asset,status:'checking'}); updateAssetInspector();
+  try {
+    let r = await fetch(asset.path,{method:'HEAD',cache:'no-store'});
+    if (!r.ok && r.status !== 404) r = await fetch(asset.path,{headers:{Range:'bytes=0-0'},cache:'no-store'});
+    const ok = r.ok || r.status===206;
+    state.assetResults.set(asset.path,{...asset,status:ok?'ok':'missing',http:r.status,typeHeader:r.headers.get('content-type')||'unknown',size:Number(r.headers.get('content-length')||0)});
+    devLog(`${ok?'Asset OK':'Asset missing'}: ${asset.path}${r.status?' ('+r.status+')':''}`, ok?'info':'error');
+  } catch(e) { state.assetResults.set(asset.path,{...asset,status:'error',error:e.message}); devLog(`Asset error: ${asset.path} — ${e.message}`,'error'); }
+  updateAssetInspector();
+}
+async function scanCurrentAssets(force=false) { await Promise.all(collectAssets(currentStop()).map(a=>inspectAsset(a,force))); }
+async function scanAllAssets() { const all=[...new Map(state.stops.flatMap(collectAssets).map(a=>[a.path,a])).values()]; await Promise.all(all.map(a=>inspectAsset(a,true))); updateAssetInspector(true); }
+function updateAssetInspector(showAll=false) {
+  const box=$('devAssetInspector'); if(!box) return;
+  const rows=showAll ? [...state.assetResults.values()] : collectAssets(currentStop()).map(a=>state.assetResults.get(a.path)||{...a,status:'not checked'});
+  box.innerHTML=rows.map(a=>{const icon={ok:'✅',missing:'❌',error:'⚠️',checking:'⏳','not checked':'•'}[a.status]||'•'; const detail=a.status==='ok'?`${a.typeHeader}${a.size?' · '+formatDevBytes(a.size):''}`:a.status==='missing'?`HTTP ${a.http}`:(a.error||a.status); return `<div class="dev-asset"><span>${icon}</span><div><strong>${escapeHtml(a.type)}</strong><code>${escapeHtml(a.path)}</code><small>${escapeHtml(detail)}</small></div></div>`;}).join('')||'<p class="dev-note">No assets configured.</p>';
+}
+
+function enableDevTeleport() { state.gpsBypassed=true; if(state.watchId!==null&&navigator.geolocation){navigator.geolocation.clearWatch(state.watchId);state.watchId=null;} showDevArrival(); devLog(`Teleported to stop ${currentStop().id}`); updateDeveloperTools(); }
+function disableDevTeleport() { state.gpsBypassed=false; els.distanceValue.textContent='—'; els.gpsStatus.textContent='Teleport disabled. Enable GPS to use the real location.'; devLog('Real GPS mode restored'); updateDeveloperTools(); }
+function showDevArrival() { els.distanceValue.textContent='0'; els.gpsStatus.textContent=`Developer teleport: Stop ${currentStop().id}, heading ${state.simulatedHeading}°.`; }
+
+function populateDevEditor() { const s=currentStop(); if(!s||!$('editTitle')) return; $('editTitle').value=s.title||''; $('editSubtitle').value=s.subtitle||''; $('editLatitude').value=s.coordinates?.latitude??''; $('editLongitude').value=s.coordinates?.longitude??''; $('editRadius').value=s.activationRadius??35; $('editPreferredHeading').value=s.preferredHeading??0; }
+function applyDevEditor() { const s=currentStop(); const lat=Number($('editLatitude').value), lon=Number($('editLongitude').value); if(!Number.isFinite(lat)||lat<-90||lat>90||!Number.isFinite(lon)||lon<-180||lon>180) return showToast('Enter valid coordinates.'); s.title=$('editTitle').value.trim()||s.title; s.subtitle=$('editSubtitle').value.trim(); s.coordinates={latitude:lat,longitude:lon}; s.activationRadius=clamp(Math.round(Number($('editRadius').value)||35),5,250); s.preferredHeading=((Math.round(Number($('editPreferredHeading').value)||0)%360)+360)%360; renderStop(); populateDevEditor(); showToast('Changes applied locally. Download stops.json to keep them.'); devLog(`Edited stop ${s.id}`); }
+function restoreDevStop() { state.stops[state.stopIndex]=JSON.parse(JSON.stringify(state.devOriginalStops[state.stopIndex])); renderStop(); populateDevEditor(); showToast('Stop restored from the loaded GitHub version.'); }
+function exportDevJson() { const blob=new Blob([JSON.stringify(state.stops,null,2)+'\n'],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url;a.download='stops.json';a.click();URL.revokeObjectURL(url);devLog('Downloaded stops.json'); }
+async function copyDevJson() { try{await navigator.clipboard.writeText(JSON.stringify(state.stops,null,2));showToast('JSON copied.');}catch{showToast('Clipboard access blocked.');} }
+
+function devLog(message,level='info') { if(!state.devMode||!state.devLogEntries) return; state.devLogEntries.push({time:new Date().toLocaleTimeString('en-IE',{hour12:false}),message,level}); if(state.devLogEntries.length>250) state.devLogEntries.shift(); updateDevConsole(); }
+function updateDevConsole() { const box=$('devConsole'); if(box){box.textContent=(state.devLogEntries||[]).map(x=>`${x.time} [${x.level.toUpperCase()}] ${x.message}`).join('\n');box.scrollTop=box.scrollHeight;} }
+async function copyDevLog() { try{await navigator.clipboard.writeText((state.devLogEntries||[]).map(x=>`${x.time} [${x.level.toUpperCase()}] ${x.message}`).join('\n'));showToast('Developer log copied.');}catch{showToast('Clipboard access blocked.');} }
+function devFpsFrame(now) { if(!state.devMode) return; state.devFrames++; const elapsed=now-state.devFpsStart; if(elapsed>=1000){state.devFps=Math.round(state.devFrames*1000/elapsed);state.devFrames=0;state.devFpsStart=now;updateDeveloperTools();} requestAnimationFrame(devFpsFrame); }
+function formatDevBytes(bytes){if(!bytes)return'unknown size';const u=['B','KB','MB','GB'];const i=Math.min(Math.floor(Math.log(bytes)/Math.log(1024)),u.length-1);return`${(bytes/1024**i).toFixed(i?1:0)} ${u[i]}`;}
+function injectExpandedDevStyles(){const s=document.createElement('style');s.textContent=`.fionn-dev-suite{max-width:1100px;margin:2rem auto;padding:1rem;background:#101820;color:#f7f7f7;border-radius:16px;box-shadow:0 12px 40px #0005;font-family:Arial,sans-serif}.fionn-dev-suite h2{margin:.2rem 0;color:#fff}.dev-head{display:flex;align-items:center;justify-content:space-between;gap:1rem}.dev-tabs{display:flex;gap:.4rem;overflow-x:auto;margin:1rem 0}.dev-tab,.dev-btn,.dev-primary,.dev-danger{border:0;border-radius:10px;padding:.75rem .9rem;font-weight:700;cursor:pointer}.dev-tab{background:#2b3944;color:#fff;white-space:nowrap}.dev-tab.active{background:#fff;color:#101820}.dev-primary{background:#f1c75b;color:#17120a}.dev-btn{background:#dce4e9;color:#101820}.dev-danger{background:#923737;color:#fff}.dev-panel{display:none}.dev-panel.active{display:block}.dev-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.6rem;margin:.8rem 0}.dev-two{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}.dev-label{display:block;margin:.75rem 0 .3rem;font-weight:700}.dev-input{box-sizing:border-box;width:100%;min-height:44px;padding:.65rem;border-radius:9px;border:1px solid #64727d;font:inherit}.dev-range{width:100%}.dev-note{color:#c8d0d5;line-height:1.45}.dev-note code{color:#ffe69a}.dev-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.55rem}.dev-metrics>div{background:#1c2831;padding:.7rem;border-radius:10px}.dev-metrics strong,.dev-metrics span{display:block}.dev-metrics span{color:#f1c75b;margin-top:.25rem}.dev-wide{grid-column:1/-1;word-break:break-all}.dev-asset{display:grid;grid-template-columns:30px 1fr;gap:.5rem;padding:.7rem 0;border-bottom:1px solid #34434e}.dev-asset code,.dev-asset small{display:block;margin-top:.25rem;word-break:break-all}.dev-asset small{color:#bbc5cb}.dev-console{min-height:260px;max-height:440px;overflow:auto;background:#05080a;color:#b9f5c4;padding:.8rem;border-radius:10px;white-space:pre-wrap}.dev-compass{position:relative;width:130px;height:130px;margin:1rem auto;border:3px solid #e8edf0;border-radius:50%;display:grid;place-items:start center;padding-top:8px;box-sizing:border-box}.dev-needle{position:absolute;left:50%;top:18px;width:4px;height:48px;background:#f1c75b;transform-origin:50% 47px;border-radius:3px}.dev-needle:before{content:'';position:absolute;left:-6px;top:-4px;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid #f1c75b}@media(max-width:650px){.fionn-dev-suite{margin:1rem .5rem}.dev-two{grid-template-columns:1fr}}`;document.head.appendChild(s);}

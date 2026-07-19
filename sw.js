@@ -1,4 +1,4 @@
-const CACHE_NAME = "fionn-clontarf-v4";
+const CACHE_NAME = "fionn-clontarf-v5";
 
 const APP_SHELL = [
   "./",
