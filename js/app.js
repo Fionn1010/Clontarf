@@ -1,3 +1,14 @@
+// Cloudflare R2 media root for the Clontarf tour.
+// Keep paths in stops.json relative, for example: assets/models/sc1ar1.glb
+const TOUR_ASSET_BASE = "https://pub-62956dc8ece640c59a779ae7fcd74275.r2.dev/clontarf/";
+
+function assetUrl(path) {
+  if (!path) return "";
+  // Preserve absolute URLs, data URLs, and blob URLs.
+  if (/^(https?:|data:|blob:)/i.test(path)) return path;
+  return new URL(String(path).replace(/^\/+/, ""), TOUR_ASSET_BASE).href;
+}
+
 const state = {
   stops: [],
   stopIndex: Number(localStorage.getItem("clontarf-stop-index") || 0),
@@ -154,7 +165,7 @@ async function startCinematic() {
   document.body.style.overflow = "hidden";
 
   if (stop.audio) {
-    state.audio = new Audio(stop.audio);
+    state.audio = new Audio(assetUrl(stop.audio));
     state.audio.preload = "auto";
     state.audio.play().catch(() => {});
   }
@@ -167,7 +178,7 @@ async function loadAndPlayVideo() {
   const source = stop.videos[state.videoIndex];
 
   els.videoCounter.textContent = `Film ${state.videoIndex + 1} of ${stop.videos.length}`;
-  els.storyVideo.src = source;
+  els.storyVideo.src = assetUrl(source);
   els.storyVideo.load();
 
   try {
@@ -261,10 +272,10 @@ function renderSequenceItem() {
     showStage("ar");
     els.arTitle.textContent = item.title;
     els.arInstruction.textContent = item.instruction;
-    els.arViewer.src = item.model;
+    els.arViewer.src = assetUrl(item.model);
 
     if (item.iosModel) {
-      els.arViewer.setAttribute("ios-src", item.iosModel);
+      els.arViewer.setAttribute("ios-src", assetUrl(item.iosModel));
     } else {
       els.arViewer.removeAttribute("ios-src");
     }
@@ -695,7 +706,7 @@ function updateDeveloperTools() {
   const item = stop?.sequence?.[state.sequenceIndex];
   const memory = performance.memory ? `${Math.round(performance.memory.usedJSHeapSize / 1048576)} MB` : 'Unavailable';
   if ($('devPerformance')) $('devPerformance').innerHTML = `
-    <div><strong>FPS</strong><span>${state.devFps || '—'}</span></div><div><strong>Model load</strong><span>${state.modelLoadMs == null ? '—' : state.modelLoadMs+' ms'}</span></div><div><strong>Models loaded</strong><span>${state.loadedModels?.size || 0}</span></div><div><strong>Network</strong><span>${navigator.connection?.effectiveType || 'unknown'}</span></div><div><strong>JS memory</strong><span>${memory}</span></div><div><strong>GPS</strong><span>${state.gpsBypassed ? 'Teleport' : 'Real'}</span></div><p class="dev-wide"><strong>Current:</strong> ${escapeHtml(item?.type==='ar' ? item.model : 'No AR model open')}</p><p class="dev-note dev-wide">Browsers do not reliably expose GPU or texture memory, so this panel reports only real browser metrics.</p>`;
+    <div><strong>FPS</strong><span>${state.devFps || '—'}</span></div><div><strong>Model load</strong><span>${state.modelLoadMs == null ? '—' : state.modelLoadMs+' ms'}</span></div><div><strong>Models loaded</strong><span>${state.loadedModels?.size || 0}</span></div><div><strong>Network</strong><span>${navigator.connection?.effectiveType || 'unknown'}</span></div><div><strong>JS memory</strong><span>${memory}</span></div><div><strong>GPS</strong><span>${state.gpsBypassed ? 'Teleport' : 'Real'}</span></div><p class="dev-wide"><strong>Configured:</strong> ${escapeHtml(item?.type==='ar' ? item.model : 'No AR model open')}<br><strong>Resolved:</strong> ${escapeHtml(item?.type==='ar' ? assetUrl(item.model) : '—')}</p><p class="dev-note dev-wide">Browsers do not reliably expose GPU or texture memory, so this panel reports only real browser metrics.</p>`;
   if ($('devCompassNeedle')) $('devCompassNeedle').style.transform = `translateX(-50%) rotate(${state.simulatedHeading}deg)`;
   updateAssetInspector(); updateDevConsole();
 }
@@ -711,8 +722,9 @@ function reloadCurrentModel() {
   const item = currentStop()?.sequence?.[state.sequenceIndex];
   if (!item || item.type !== 'ar') return showToast('Open an AR scene first.');
   state.modelLoadStartedAt = performance.now(); state.modelLoadMs = null;
-  const joiner = item.model.includes('?') ? '&' : '?';
-  els.arViewer.src = `${item.model}${joiner}reload=${Date.now()}`;
+  const modelUrl = assetUrl(item.model);
+  const joiner = modelUrl.includes('?') ? '&' : '?';
+  els.arViewer.src = `${modelUrl}${joiner}reload=${Date.now()}`;
   devLog(`Force reloading model: ${item.model}`); showToast('Reloading current GLB without cache.');
 }
 
@@ -727,8 +739,9 @@ async function inspectAsset(asset, force=false) {
   if (!force && state.assetResults.has(asset.path)) return;
   state.assetResults.set(asset.path,{...asset,status:'checking'}); updateAssetInspector();
   try {
-    let r = await fetch(asset.path,{method:'HEAD',cache:'no-store'});
-    if (!r.ok && r.status !== 404) r = await fetch(asset.path,{headers:{Range:'bytes=0-0'},cache:'no-store'});
+    const resolvedPath = assetUrl(asset.path);
+    let r = await fetch(resolvedPath,{method:'HEAD',cache:'no-store',mode:'cors'});
+    if (!r.ok && r.status !== 404) r = await fetch(resolvedPath,{headers:{Range:'bytes=0-0'},cache:'no-store',mode:'cors'});
     const ok = r.ok || r.status===206;
     state.assetResults.set(asset.path,{...asset,status:ok?'ok':'missing',http:r.status,typeHeader:r.headers.get('content-type')||'unknown',size:Number(r.headers.get('content-length')||0)});
     devLog(`${ok?'Asset OK':'Asset missing'}: ${asset.path}${r.status?' ('+r.status+')':''}`, ok?'info':'error');

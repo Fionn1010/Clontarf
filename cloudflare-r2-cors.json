@@ -1,0 +1,22 @@
+[
+  {
+    "AllowedOrigins": [
+      "https://fionn1010.github.io"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "HEAD"
+    ],
+    "AllowedHeaders": [
+      "Range"
+    ],
+    "ExposeHeaders": [
+      "Accept-Ranges",
+      "Content-Length",
+      "Content-Range",
+      "Content-Type",
+      "ETag"
+    ],
+    "MaxAgeSeconds": 86400
+  }
+]

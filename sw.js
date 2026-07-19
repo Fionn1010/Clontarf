@@ -1,4 +1,4 @@
-const CACHE_NAME = "fionn-clontarf-v5";
+const CACHE_NAME = "fionn-clontarf-v6-r2";
 
 const APP_SHELL = [
   "./",
@@ -32,6 +32,12 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+
+  // Heavy media is hosted by Cloudflare R2. Let the browser fetch it directly.
+  // This avoids GitHub Pages service-worker cache duplication and range-request issues.
+  if (url.hostname === "pub-62956dc8ece640c59a779ae7fcd74275.r2.dev") {
+    return;
+  }
 
   if (request.headers.has("range")) {
     event.respondWith(handleRangeRequest(request));
