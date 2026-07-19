@@ -1,4 +1,4 @@
-const CACHE_NAME = "fionn-clontarf-v3";
+const CACHE_NAME = "fionn-clontarf-v4";
 
 const APP_SHELL = [
   "./",
@@ -21,11 +21,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
-        )
+        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
       )
       .then(() => self.clients.claim())
   );
@@ -33,24 +29,20 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
 
-  // Range requests are required for reliable MP4 playback on mobile.
   if (request.headers.has("range")) {
     event.respondWith(handleRangeRequest(request));
     return;
   }
 
-  // Navigation: network first, then cached index.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", response.clone()));
           return response;
         })
         .catch(() => caches.match("./index.html"))
@@ -58,8 +50,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Config should be network-first so model filename changes appear immediately.
-  if (url.origin === self.location.origin && url.pathname.endsWith("/config/stops.json")) {
+  // Always check these development-sensitive files online first.
+  if (
+    url.origin === self.location.origin &&
+    (url.pathname.endsWith("/js/app.js") || url.pathname.endsWith("/config/stops.json"))
+  ) {
     event.respondWith(
       fetch(request, { cache: "no-store" })
         .then((response) => {
@@ -73,7 +68,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Same-origin assets: cache first, update in background.
   if (url.origin === self.location.origin) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -99,7 +93,6 @@ async function handleRangeRequest(request) {
 
   if (!response) {
     response = await fetch(request.url);
-
     if (response.ok && response.status === 200) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request.url, response.clone());
@@ -111,7 +104,6 @@ async function handleRangeRequest(request) {
   const data = await response.arrayBuffer();
   const size = data.byteLength;
   const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
-
   if (!match) return response;
 
   const start = Number(match[1]);

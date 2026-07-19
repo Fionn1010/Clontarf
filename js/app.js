@@ -5,7 +5,9 @@ const state = {
   videoIndex: 0,
   watchId: null,
   audio: null,
-  installPrompt: null
+  installPrompt: null,
+  devMode: new URLSearchParams(location.search).get("dev") === "1",
+  gpsBypassed: false
 };
 
 const $ = (id) => document.getElementById(id);
@@ -52,7 +54,8 @@ document.addEventListener("DOMContentLoaded", init);
 async function init() {
   bindEvents();
   await loadStops();
-  state.stopIndex = clamp(state.stopIndex, 0, state.stops.length - 1);
+
+  state.stopIndex = clamp(state.stopIndex, 0, Math.max(0, state.stops.length - 1));
   renderStop();
 
   if ("serviceWorker" in navigator) {
@@ -61,8 +64,8 @@ async function init() {
     });
   }
 
-  if (new URLSearchParams(location.search).get("dev") === "1") {
-    els.devPanel.hidden = false;
+  if (state.devMode) {
+    initialiseDeveloperTools();
   }
 }
 
@@ -79,28 +82,39 @@ async function loadStops() {
 }
 
 function bindEvents() {
-  els.startVideoButton.addEventListener("click", startCinematic);
-  els.closeVideoButton.addEventListener("click", closeVideo);
-  els.storyVideo.addEventListener("ended", playNextVideo);
-  els.storyVideo.addEventListener("error", handleVideoError);
-  els.arCompleteButton.addEventListener("click", advanceSequence);
-  els.instructionContinueButton.addEventListener("click", advanceSequence);
-  els.nextStopButton.addEventListener("click", nextStop);
-  els.enableGpsButton.addEventListener("click", enableGps);
-  els.arrivedButton.addEventListener("click", startCinematic);
-  els.installButton.addEventListener("click", installApp);
-  els.devPrevious.addEventListener("click", previousStop);
-  els.devNext.addEventListener("click", nextStop);
-  els.devReset.addEventListener("click", resetTour);
+  els.startVideoButton?.addEventListener("click", startCinematic);
+  els.closeVideoButton?.addEventListener("click", closeVideo);
+  els.storyVideo?.addEventListener("ended", playNextVideo);
+  els.storyVideo?.addEventListener("error", handleVideoError);
+  els.arCompleteButton?.addEventListener("click", advanceSequence);
+  els.instructionContinueButton?.addEventListener("click", advanceSequence);
+  els.nextStopButton?.addEventListener("click", nextStop);
+  els.enableGpsButton?.addEventListener("click", enableGps);
+  els.arrivedButton?.addEventListener("click", startCinematic);
+  els.installButton?.addEventListener("click", installApp);
+  els.devPrevious?.addEventListener("click", previousStop);
+  els.devNext?.addEventListener("click", nextStop);
+  els.devReset?.addEventListener("click", resetTour);
 
   window.addEventListener("beforeinstallprompt", (event) => {
     event.preventDefault();
     state.installPrompt = event;
-    els.installButton.hidden = false;
+    if (els.installButton) els.installButton.hidden = false;
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !els.videoModal.hidden) closeVideo();
+    if (event.key === "Escape" && els.videoModal && !els.videoModal.hidden) {
+      closeVideo();
+    }
+
+    if (!state.devMode || ["INPUT", "SELECT", "TEXTAREA"].includes(event.target.tagName)) {
+      return;
+    }
+
+    if (event.key === "ArrowLeft") previousStop();
+    if (event.key === "ArrowRight") nextStop();
+    if (event.key.toLowerCase() === "a") jumpToFirstAr();
+    if (event.key.toLowerCase() === "v") startCinematic();
   });
 }
 
@@ -123,11 +137,13 @@ function renderStop() {
 
   showStage("video");
   localStorage.setItem("clontarf-stop-index", String(state.stopIndex));
+  updateDeveloperTools();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function startCinematic() {
   const stop = currentStop();
+
   if (!stop?.videos?.length) {
     startSequence();
     return;
@@ -140,9 +156,7 @@ async function startCinematic() {
   if (stop.audio) {
     state.audio = new Audio(stop.audio);
     state.audio.preload = "auto";
-    state.audio.play().catch(() => {
-      // Some browsers may reject secondary media playback. The videos still play normally.
-    });
+    state.audio.play().catch(() => {});
   }
 
   await loadAndPlayVideo();
@@ -151,12 +165,14 @@ async function startCinematic() {
 async function loadAndPlayVideo() {
   const stop = currentStop();
   const source = stop.videos[state.videoIndex];
+
   els.videoCounter.textContent = `Film ${state.videoIndex + 1} of ${stop.videos.length}`;
   els.storyVideo.src = source;
   els.storyVideo.load();
 
   try {
     await els.storyVideo.play();
+
     if (els.storyVideo.requestFullscreen && !document.fullscreenElement) {
       els.storyVideo.requestFullscreen().catch(() => {});
     }
@@ -183,6 +199,7 @@ function handleVideoError() {
   const stop = currentStop();
   const missing = stop?.videos?.[state.videoIndex] || "video file";
   showToast(`Missing asset: ${missing}`);
+
   state.videoIndex += 1;
 
   if (state.videoIndex < stop.videos.length) {
@@ -233,7 +250,10 @@ function renderSequenceItem() {
         ? "You have completed the Battle of Clontarf experience."
         : "Continue to the next location when you are ready.";
     els.nextStopButton.textContent =
-      state.stopIndex === state.stops.length - 1 ? "Return to first stop" : "Continue to next stop";
+      state.stopIndex === state.stops.length - 1
+        ? "Return to first stop"
+        : "Continue to next stop";
+    updateDeveloperTools();
     return;
   }
 
@@ -248,6 +268,8 @@ function renderSequenceItem() {
     } else {
       els.arViewer.removeAttribute("ios-src");
     }
+
+    updateDeveloperTools();
     return;
   }
 
@@ -255,6 +277,7 @@ function renderSequenceItem() {
     showStage("instruction");
     els.instructionTitle.textContent = item.title;
     els.instructionText.textContent = item.text;
+    updateDeveloperTools();
     return;
   }
 
@@ -274,25 +297,33 @@ function showStage(name) {
 }
 
 function nextStop() {
-  state.stopIndex =
-    state.stopIndex >= state.stops.length - 1 ? 0 : state.stopIndex + 1;
+  if (!state.stops.length) return;
+  state.stopIndex = state.stopIndex >= state.stops.length - 1 ? 0 : state.stopIndex + 1;
   renderStop();
 }
 
 function previousStop() {
-  state.stopIndex =
-    state.stopIndex <= 0 ? state.stops.length - 1 : state.stopIndex - 1;
+  if (!state.stops.length) return;
+  state.stopIndex = state.stopIndex <= 0 ? state.stops.length - 1 : state.stopIndex - 1;
   renderStop();
 }
 
 function resetTour() {
   localStorage.removeItem("clontarf-stop-index");
   state.stopIndex = 0;
+  state.sequenceIndex = 0;
+  state.gpsBypassed = false;
   renderStop();
   showToast("Tour reset.");
 }
 
 function enableGps() {
+  if (state.devMode && state.gpsBypassed) {
+    els.distanceValue.textContent = "0";
+    els.gpsStatus.textContent = "Developer GPS bypass active.";
+    return;
+  }
+
   if (!navigator.geolocation) {
     els.gpsStatus.textContent = "This browser does not support GPS.";
     return;
@@ -319,6 +350,8 @@ function enableGps() {
 }
 
 function updateDistance(position) {
+  if (state.gpsBypassed) return;
+
   const stop = currentStop();
   const target = stop.coordinates;
   const metres = haversineMetres(
@@ -344,8 +377,8 @@ function haversineMetres(lat1, lon1, lat2, lon2) {
   const a =
     Math.sin(deltaLat / 2) ** 2 +
     Math.cos(toRadians(lat1)) *
-    Math.cos(toRadians(lat2)) *
-    Math.sin(deltaLon / 2) ** 2;
+      Math.cos(toRadians(lat2)) *
+      Math.sin(deltaLon / 2) ** 2;
 
   return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
@@ -358,6 +391,140 @@ async function installApp() {
   els.installButton.hidden = true;
 }
 
+function initialiseDeveloperTools() {
+  if (!els.devPanel) return;
+
+  els.devPanel.hidden = false;
+  els.devPanel.innerHTML = `
+    <p class="eyebrow">Developer mode</p>
+    <h2 style="margin-top:.25rem">Tour test controls</h2>
+
+    <label for="devStopSelect" style="display:block;margin:.8rem 0 .35rem;font-family:Arial,sans-serif">
+      Jump to stop
+    </label>
+    <select id="devStopSelect" style="width:100%;min-height:48px;padding:.7rem;border-radius:10px">
+      ${state.stops.map((stop, index) =>
+        `<option value="${index}">Stop ${stop.id}: ${escapeHtml(stop.title)}</option>`
+      ).join("")}
+    </select>
+
+    <div id="devArButtons" class="button-row wrap" style="margin-top:.85rem"></div>
+
+    <div class="button-row wrap">
+      <button id="devSkipFilms" class="secondary-button" type="button">Skip films → first AR</button>
+      <button id="devGpsBypass" class="secondary-button" type="button">Enable GPS bypass</button>
+    </div>
+
+    <div class="button-row wrap">
+      <button id="devPreviousNew" class="ghost-button" type="button">Previous stop</button>
+      <button id="devNextNew" class="ghost-button" type="button">Next stop</button>
+      <button id="devCompletion" class="ghost-button" type="button">Stop complete</button>
+      <button id="devResetNew" class="ghost-button" type="button">Reset tour</button>
+    </div>
+
+    <p id="devAssetPath" class="status-text" style="word-break:break-all"></p>
+    <p class="status-text">
+      Keyboard: ← previous stop, → next stop, A first AR, V films.
+      Remove <code>?dev=1</code> for the normal visitor view.
+    </p>
+  `;
+
+  $("devStopSelect").addEventListener("change", (event) => {
+    state.stopIndex = Number(event.target.value);
+    renderStop();
+  });
+
+  $("devSkipFilms").addEventListener("click", jumpToFirstAr);
+  $("devGpsBypass").addEventListener("click", toggleGpsBypass);
+  $("devPreviousNew").addEventListener("click", previousStop);
+  $("devNextNew").addEventListener("click", nextStop);
+  $("devCompletion").addEventListener("click", () => {
+    state.sequenceIndex = currentStop()?.sequence?.length || 0;
+    renderSequenceItem();
+  });
+  $("devResetNew").addEventListener("click", resetTour);
+
+  updateDeveloperTools();
+}
+
+function updateDeveloperTools() {
+  if (!state.devMode || !els.devPanel || els.devPanel.hidden) return;
+
+  const select = $("devStopSelect");
+  const buttons = $("devArButtons");
+  const assetPath = $("devAssetPath");
+  const bypassButton = $("devGpsBypass");
+  const stop = currentStop();
+
+  if (select) select.value = String(state.stopIndex);
+  if (bypassButton) {
+    bypassButton.textContent = state.gpsBypassed ? "Disable GPS bypass" : "Enable GPS bypass";
+  }
+
+  if (!buttons || !stop) return;
+
+  const arItems = (stop.sequence || [])
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => item.type === "ar");
+
+  buttons.innerHTML = arItems.length
+    ? arItems.map(({ item, index }, arNumber) =>
+        `<button class="primary-button dev-ar-jump" data-sequence-index="${index}" type="button">
+          Test AR ${arNumber + 1}: ${escapeHtml(item.title)}
+        </button>`
+      ).join("")
+    : `<p class="status-text">No AR scenes are configured for this stop.</p>`;
+
+  buttons.querySelectorAll(".dev-ar-jump").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.sequenceIndex = Number(button.dataset.sequenceIndex);
+      renderSequenceItem();
+      document.querySelector("#arStage")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
+  const currentItem = stop.sequence?.[state.sequenceIndex];
+  assetPath.textContent =
+    currentItem?.type === "ar"
+      ? `Current model: ${currentItem.model}`
+      : `Current stop: ${stop.title}`;
+}
+
+function jumpToFirstAr() {
+  const stop = currentStop();
+  const firstArIndex = stop?.sequence?.findIndex((item) => item.type === "ar");
+
+  if (firstArIndex === undefined || firstArIndex < 0) {
+    showToast("This stop has no AR scene configured.");
+    return;
+  }
+
+  if (els.videoModal && !els.videoModal.hidden) closeVideo(false);
+  state.sequenceIndex = firstArIndex;
+  renderSequenceItem();
+  document.querySelector("#arStage")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function toggleGpsBypass() {
+  state.gpsBypassed = !state.gpsBypassed;
+
+  if (state.gpsBypassed) {
+    if (state.watchId !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(state.watchId);
+      state.watchId = null;
+    }
+    els.distanceValue.textContent = "0";
+    els.gpsStatus.textContent = "Developer GPS bypass active.";
+    showToast("GPS bypass enabled.");
+  } else {
+    els.distanceValue.textContent = "—";
+    els.gpsStatus.textContent = "GPS bypass disabled.";
+    showToast("GPS bypass disabled.");
+  }
+
+  updateDeveloperTools();
+}
+
 function showToast(message) {
   els.toast.textContent = message;
   els.toast.hidden = false;
@@ -365,6 +532,15 @@ function showToast(message) {
   showToast.timeout = setTimeout(() => {
     els.toast.hidden = true;
   }, 4200);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function clamp(value, min, max) {
