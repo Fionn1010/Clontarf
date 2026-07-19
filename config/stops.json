@@ -7,11 +7,13 @@
       "latitude": 53.3605,
       "longitude": -6.1736
     },
+    "activationRadius": 35,
+    "preferredHeading": 90,
     "videos": [
       "assets/videos/scene-1-video-1-first-sighting.mp4",
       "assets/videos/scene-1-video-2-armies-assemble.mp4"
     ],
-    "audio": "assets/audio/scene-1-narration.mp3",
+    "audio": "assets/audio/scene-1.mp3",
     "sequence": [
       {
         "type": "ar",
@@ -42,20 +44,12 @@
       "latitude": 53.3611,
       "longitude": -6.1718
     },
+    "activationRadius": 35,
+    "preferredHeading": 90,
     "videos": [
-      "assets/videos/scene-2-video-1-brian-council.mp4",
-      "assets/videos/scene-2-video-2-final-orders.mp4"
+      "assets/videos/scene-2-video-1-brian-council.mp4"
     ],
-    "audio": "assets/audio/scene-2-narration.mp3",
-    "sequence": [
-      {
-        "type": "ar",
-        "title": "The War Council",
-        "instruction": "Place Brian and his commanders into the landscape.",
-        "model": "assets/models/scene-2-ar-1-war-council.glb",
-        "iosModel": ""
-      }
-    ]
+    "sequence": []
   },
   {
     "id": 3,
@@ -65,20 +59,10 @@
       "latitude": 53.362,
       "longitude": -6.1698
     },
-    "videos": [
-      "assets/videos/scene-3-video-1-battle-lines.mp4",
-      "assets/videos/scene-3-video-2-clash.mp4"
-    ],
-    "audio": "assets/audio/scene-3-narration.mp3",
-    "sequence": [
-      {
-        "type": "ar",
-        "title": "The Battle Lines",
-        "instruction": "Place the opposing formations on open ground.",
-        "model": "assets/models/scene-3-ar-1-battle-lines.glb",
-        "iosModel": ""
-      }
-    ]
+    "activationRadius": 35,
+    "preferredHeading": 90,
+    "videos": [],
+    "sequence": []
   },
   {
     "id": 4,
@@ -88,19 +72,11 @@
       "latitude": 53.363,
       "longitude": -6.1682
     },
+    "activationRadius": 35,
+    "preferredHeading": 90,
     "videos": [
-      "assets/videos/scene-4-video-1-aftermath.mp4",
-      "assets/videos/scene-4-video-2-legacy.mp4"
+      "assets/videos/scene-4-video-1-aftermath.mp4"
     ],
-    "audio": "assets/audio/scene-4-narration.mp3",
-    "sequence": [
-      {
-        "type": "ar",
-        "title": "Legacy of Clontarf",
-        "instruction": "Place the final commemorative scene into the landscape.",
-        "model": "assets/models/scene-4-ar-1-legacy.glb",
-        "iosModel": ""
-      }
-    ]
+    "sequence": []
   }
 ]
