@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "title": "The Armies Assemble",
+    "subtitle": "Stand where the opposing forces gathered before battle.",
+    "coordinates": {
+      "latitude": 53.3605,
+      "longitude": -6.1736
+    },
+    "activationRadius": 35,
+    "preferredHeading": 90,
+    "videos": [
+      "assets/videos/scene-1-video-1-first-sighting.mp4",
+      "assets/videos/scene-1-video-2-armies-assemble.mp4"
+    ],
+    "audio": "assets/audio/scene-1.mp3",
+    "sequence": [
+      {
+        "type": "ar",
+        "title": "Stand with the Irish",
+        "instruction": "Place Brian Boru and the Irish camp on the grass, then step beside the group.",
+        "model": "assets/models/sc1ar1.glb",
+        "iosModel": ""
+      },
+      {
+        "type": "instruction",
+        "title": "Walk to the seawall",
+        "text": "Point your phone toward Dublin Bay when you reach the viewing position."
+      },
+      {
+        "type": "ar",
+        "title": "The Viking Fleet Arrives",
+        "instruction": "Place the fleet offshore and move your phone slowly to frame the longships across the bay.",
+        "model": "assets/models/sc1ar2.glb",
+        "iosModel": ""
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Brian Boru and His Council",
+    "subtitle": "Enter the final council before the battle.",
+    "coordinates": {
+      "latitude": 53.3611,
+      "longitude": -6.1718
+    },
+    "activationRadius": 35,
+    "preferredHeading": 90,
+    "videos": [
+      "assets/videos/scene-2-video-1-brian-council.mp4"
+    ],
+    "sequence": []
+  },
+  {
+    "id": 3,
+    "title": "The Clash of Armies",
+    "subtitle": "Witness the battle lines collide.",
+    "coordinates": {
+      "latitude": 53.362,
+      "longitude": -6.1698
+    },
+    "activationRadius": 35,
+    "preferredHeading": 90,
+    "videos": [],
+    "sequence": []
+  },
+  {
+    "id": 4,
+    "title": "Aftermath and Legacy",
+    "subtitle": "Discover how the battle reshaped Ireland.",
+    "coordinates": {
+      "latitude": 53.363,
+      "longitude": -6.1682
+    },
+    "activationRadius": 35,
+    "preferredHeading": 90,
+    "videos": [
+      "assets/videos/scene-4-video-1-aftermath.mp4"
+    ],
+    "sequence": []
+  }
+]

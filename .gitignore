@@ -1,0 +1,7 @@
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
+# Large tour media belongs in Cloudflare R2, not GitHub.
+assets/
+**/assets/
