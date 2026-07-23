@@ -7,17 +7,15 @@
   <meta name="description" content="Battle of Clontarf immersive heritage tour by Fionn Heritage Tours.">
   <title>Battle of Clontarf | Fionn Heritage Tours</title>
 
+  <link rel="preconnect" href="https://pub-62956dc8ece640c59a779ae7fcd74275.r2.dev" crossorigin>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="../../engine/css/styles.css">
+  <link rel="stylesheet" href="../../css/fionn-platform.css">
 
-  <!-- Google's model-viewer provides browser-based AR on supported Android and iOS devices. -->
-  <script type="module"
-    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 </head>
 <body>
-  <noscript>
-    <div class="noscript">JavaScript is required to run this tour.</div>
-  </noscript>
+  <noscript><div class="noscript">JavaScript is required to run this tour.</div></noscript>
 
   <header class="site-header">
     <div>
@@ -34,55 +32,36 @@
         <span class="eyebrow">GPS JOURNEY</span>
         <h2 id="gpsTitle">Follow the battle trail</h2>
       </div>
-
       <div class="gps-grid">
-        <div>
-          <span class="gps-label">Destination</span>
-          <strong id="destinationName">The Armies Assemble</strong>
-        </div>
-        <div>
-          <span class="gps-label">Distance</span>
-          <strong><span id="distanceValue">—</span> m</strong>
-        </div>
+        <div><span class="gps-label">Destination</span><strong id="destinationName">The Armies Assemble</strong></div>
+        <div><span class="gps-label">Distance</span><strong><span id="distanceValue">—</span> m</strong></div>
       </div>
-
       <div class="button-row">
         <button id="enableGpsButton" class="secondary-button">Enable GPS</button>
         <button id="arrivedButton" class="secondary-button">I'm at the stop</button>
       </div>
-
-      <p id="gpsStatus" class="status-text">
-        Best used outdoors. GPS may drift by 5–20 metres.
-      </p>
+      <p id="gpsStatus" class="status-text">Best used outdoors. GPS may drift by 5–20 metres.</p>
     </section>
 
     <section class="stop-panel" aria-live="polite">
       <div class="stop-number" id="stopNumber">STOP 1 OF 4</div>
       <h2 id="stopTitle">The Armies Assemble</h2>
       <p id="stopSubtitle">Stand where the opposing forces gathered before battle.</p>
-
-      <div class="progress-track" aria-label="Tour progress">
-        <div id="progressBar" class="progress-bar"></div>
-      </div>
+      <div class="progress-track" aria-label="Tour progress"><div id="progressBar" class="progress-bar"></div></div>
 
       <article id="videoStage" class="stage-card active-stage">
         <span class="stage-kicker">CINEMATIC STORY</span>
         <h3>Watch the scene unfold</h3>
-        <p id="videoDescription">
-          Two short films play in sequence to establish the landscape, armies and approaching fleet.
-        </p>
+        <p id="videoDescription">Two short films play in sequence to establish the landscape, armies and approaching fleet.</p>
         <button id="startVideoButton" class="primary-button">Begin this stop</button>
       </article>
 
       <article id="arStage" class="stage-card" hidden>
         <span class="stage-kicker">AUGMENTED REALITY</span>
         <h3 id="arTitle">Stand with the Irish</h3>
-        <p id="arInstruction">
-          Place Brian Boru and the Irish camp on the grass, then step beside the group.
-        </p>
+        <p id="arInstruction">Place Brian Boru and the Irish camp on the grass, then step beside the group.</p>
 
-        <model-viewer
-          id="arViewer"
+        <model-viewer id="arViewer"
           alt="Augmented-reality historical scene"
           camera-controls
           touch-action="pan-y"
@@ -91,10 +70,9 @@
           ar
           ar-modes="scene-viewer quick-look webxr"
           ar-scale="fixed"
+          crossorigin="anonymous"
           loading="eager">
-          <button slot="ar-button" class="primary-button ar-launch-button">
-            Step into history
-          </button>
+          <button slot="ar-button" class="primary-button ar-launch-button">Step into history</button>
         </model-viewer>
 
         <div class="button-row">
@@ -132,12 +110,25 @@
   <div id="videoModal" class="modal" hidden>
     <div class="modal-inner">
       <button id="closeVideoButton" class="modal-close" aria-label="Close video">×</button>
-      <video id="storyVideo" playsinline controls preload="metadata"></video>
+      <video id="storyVideo" playsinline controls preload="metadata" crossorigin="anonymous"></video>
       <p id="videoCounter" class="video-counter"></p>
     </div>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Shared Fionn platform; paths are relative to tours/clontarf/. -->
+  <script src="../../engine/fionn-platform.js"></script>
+  <script>
+    window.fionnPlatformReady = window.FionnPlatform.init({
+      config: "../../config/platform.json",
+      camera: { modelViewerId: "arViewer" },
+      serviceWorker: false
+    }).catch(function (error) {
+      console.error("Fionn platform failed to initialise.", error);
+      return null;
+    });
+  </script>
 
   <script src="./tour.config.js"></script>
   <script type="module" src="../../engine/js/app.js"></script>
