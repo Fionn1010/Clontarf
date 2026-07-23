@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "platformVersion": "1.0.0",
+  "siteId": "clontarf",
+  "name": "Battle of Clontarf",
+  "r2Base": "https://pub-62956dc8ece640c59a779ae7fcd74275.r2.dev",
+  "localFallback": true,
+  "serviceWorker": true,
+  "assetFolders": {
+    "videos": "videos",
+    "video": "videos",
+    "models": "models",
+    "model": "models",
+    "sounds": "sounds",
+    "sound": "sounds",
+    "audio": "sounds",
+    "images": "images",
+    "image": "images",
+    "languages": "lang",
+    "language": "lang"
+  },
+  "camera": {
+    "modelViewerId": "modelViewer"
+  }
+}

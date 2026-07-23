@@ -1,129 +1,61 @@
-const CACHE_NAME = "fionn-clontarf-v6-r2";
-
-const APP_SHELL = [
+const VERSION = "fionn-shell-v1";
+const SHELL = [
   "./",
   "./index.html",
-  "./css/styles.css",
-  "./js/app.js",
-  "./config/stops.json",
-  "./manifest.webmanifest"
+  "./config/platform.json",
+  "./engine/fionn-platform.js",
+  "./engine/bootstrap.js",
+  "./css/fionn-platform.css"
 ];
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
-  );
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(SHELL)));
+  self.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys()
-      .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
-      )
-      .then(() => self.clients.claim())
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(key => key !== VERSION).map(key => caches.delete(key)))
+    )
   );
+  self.clients.claim();
 });
 
-self.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+  const isNavigation = request.mode === "navigate";
+  const isCode = /\.(?:html?|css|js|json)$/i.test(url.pathname);
+  const isLargeMedia = /\.(?:glb|gltf|mp4|webm|mp3|m4a|wav|ogg|png|jpe?g|webp)$/i.test(url.pathname);
 
-  // Heavy media is hosted by Cloudflare R2. Let the browser fetch it directly.
-  // This avoids GitHub Pages service-worker cache duplication and range-request issues.
-  if (url.hostname === "pub-62956dc8ece640c59a779ae7fcd74275.r2.dev") {
-    return;
-  }
-
-  if (request.headers.has("range")) {
-    event.respondWith(handleRangeRequest(request));
-    return;
-  }
-
-  if (request.mode === "navigate") {
+  if (isNavigation || isCode) {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", response.clone()));
+        .then(response => {
+          const copy = response.clone();
+          caches.open(VERSION).then(cache => cache.put(request, copy));
           return response;
         })
-        .catch(() => caches.match("./index.html"))
+        .catch(() => caches.match(request).then(hit => hit || caches.match("./index.html")))
     );
     return;
   }
 
-  // Always check these development-sensitive files online first.
-  if (
-    url.origin === self.location.origin &&
-    (url.pathname.endsWith("/js/app.js") || url.pathname.endsWith("/config/stops.json"))
-  ) {
+  if (isLargeMedia) {
     event.respondWith(
-      fetch(request, { cache: "no-store" })
-        .then((response) => {
+      caches.match(request).then(hit => {
+        if (hit) return hit;
+        return fetch(request).then(response => {
           if (response.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+            const copy = response.clone();
+            caches.open(VERSION).then(cache => cache.put(request, copy));
           }
           return response;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
-  if (url.origin === self.location.origin) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        const network = fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
-            }
-            return response;
-          })
-          .catch(() => cached);
-
-        return cached || network;
+        });
       })
     );
   }
 });
-
-async function handleRangeRequest(request) {
-  const rangeHeader = request.headers.get("range");
-  const cached = await caches.match(request.url);
-  let response = cached;
-
-  if (!response) {
-    response = await fetch(request.url);
-    if (response.ok && response.status === 200) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request.url, response.clone());
-    }
-  }
-
-  if (!response || !response.ok) return response;
-
-  const data = await response.arrayBuffer();
-  const size = data.byteLength;
-  const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
-  if (!match) return response;
-
-  const start = Number(match[1]);
-  const end = match[2] ? Number(match[2]) : size - 1;
-  const chunk = data.slice(start, end + 1);
-
-  return new Response(chunk, {
-    status: 206,
-    statusText: "Partial Content",
-    headers: {
-      "Content-Range": `bytes ${start}-${end}/${size}`,
-      "Accept-Ranges": "bytes",
-      "Content-Length": String(chunk.byteLength),
-      "Content-Type": response.headers.get("Content-Type") || "video/mp4"
-    }
-  });
-}

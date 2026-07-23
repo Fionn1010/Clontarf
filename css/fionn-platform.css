@@ -1,0 +1,76 @@
+:root {
+  --fionn-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --fionn-toolbar-bg: rgba(12, 18, 14, 0.92);
+  --fionn-toolbar-border: rgba(255, 255, 255, 0.18);
+}
+
+.fionn-camera-toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + var(--fionn-safe-bottom));
+  z-index: 2147483600;
+  transform: translate(-50%, 140%);
+  display: flex;
+  gap: 10px;
+  padding: 9px;
+  border: 1px solid var(--fionn-toolbar-border);
+  border-radius: 22px;
+  background: var(--fionn-toolbar-bg);
+  box-shadow: 0 12px 38px rgba(0,0,0,.42);
+  backdrop-filter: blur(14px);
+  transition: transform .22s ease;
+  pointer-events: none;
+}
+
+.fionn-camera-toolbar.is-visible {
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.fionn-camera-toolbar button {
+  min-width: 72px;
+  min-height: 58px;
+  border: 0;
+  border-radius: 15px;
+  background: rgba(255,255,255,.12);
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  padding: 7px 11px;
+}
+
+.fionn-camera-toolbar button:active { transform: scale(.97); }
+.fionn-camera-toolbar button span { font-size: 24px; line-height: 1; }
+.fionn-camera-toolbar button small { font-size: 11px; }
+
+.fionn-camera-toast {
+  position: fixed;
+  z-index: 2147483601;
+  left: 50%;
+  bottom: calc(98px + var(--fionn-safe-bottom));
+  transform: translate(-50%, 16px);
+  width: min(88vw, 430px);
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(0,0,0,.86);
+  color: white;
+  font: 700 14px/1.4 system-ui, sans-serif;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: .2s ease;
+}
+.fionn-camera-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* Prevent the page remaining locked after an AR return. */
+html:not(.fionn-ar-active),
+body:not(.fionn-ar-active) {
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+}

@@ -1,0 +1,10 @@
+FIONN BATTLE OF CLONTARF INSTALL
+
+
+        Copy config/, engine/, css/ and sw.js into the root of the existing repository.
+
+        Then add <link rel=stylesheet href=css/fionn-platform.css> to <head>.
+
+        Add <script src=engine/bootstrap.js></script> immediately before </body>.
+
+        See the main README.md for asset resolver integration.
